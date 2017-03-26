@@ -37,6 +37,7 @@ public:
 	float UniqueUnitsMade;
 	float ComplexUnitsMade;
 	float ComplexAbilitiesUsed;
+	float score;
 
 };
 
@@ -106,6 +107,7 @@ std::vector<Player> read_csv(const std::string path)
 			player.UniqueUnitsMade = std::stof(data[17]);
 			player.ComplexUnitsMade = std::stof(data[18]);
 			player.ComplexAbilitiesUsed = std::stof(data[19]);
+			player.score = 0;
 
 			players.push_back(player);
 
@@ -161,7 +163,7 @@ void rate(std::vector<Player> *players)
 	int score = 0;
 	for (auto& player : *players)
 		score += player.LeagueIndex == player.LeagueIndex;
-	std::cout << "the score is " << score << std::endl;
+	//std::cout << "the score is " << score << std::endl;
 }
 
 void normalizePlayerFieldIndexOf(std::vector<Player> *players, int playerFieldValue) {
@@ -181,7 +183,7 @@ void normalizePlayerFieldIndexOf(std::vector<Player> *players, int playerFieldVa
 		break;
 	case 5://TotalHours											PAS IMPORTANT
 		break;
-	case 6://APM													8/10
+	case 6://APM													9/10
 		// Find min max etendu
 		for (auto& player : *players) {
 			if (player.APM < minValue)
@@ -226,7 +228,7 @@ void normalizePlayerFieldIndexOf(std::vector<Player> *players, int playerFieldVa
 		break;
 	case 19://ComplexUnitsMade									PAS IMPORTANT
 		break;
-	case 20://ComplexAbilitiesUsed									9/10
+	case 20://ComplexAbilitiesUsed									8/10
 		break;
 	}
 }
@@ -242,13 +244,56 @@ void normalizePlayers(std::vector<Player> *players)
 	int nb_element = players->size();
 	int minValue = 0;
 
-	//Find min value of a specific field
+	//Second param is the index of the field value
 	normalizePlayerFieldIndexOf(players,6);
-	for (auto& player : *players)
-		std::cout << player.APM << std::endl;
+	
+	/*for (auto& player : *players)		uncomment for test
+		std::cout << player.APM << std::endl;		uncomment for test*/
+}
+
+/*
+	SCORE FUNCTION WITH 6 IMPORTANTS PARAMS !!!
+*/
+void calculScoresOfPlayers(std::vector<Player> *players) {
+	// Avec top 6 priority data field : 
+	for (auto& player : *players) {
+		player.score = ((player.ComplexAbilitiesUsed + player.NumberOfPACs + player.TotalMapExplored + player.UniqueHotkeys) / player.APM);
+		std::cout << "player has score of : " << player.score << std::endl;
+	}
 }
 
 
+/*
+	NON COMPLETE
+*/
+void KNNAlgorithm(std::vector<Player> *players, int k){
+	int nbUnrankedPlayers = 0;
+
+	//SORT : HAVING ISSUE 
+
+	//std::sort(players.begin(), players.end());
+	//std::sort(&players[20], &players[5]);
+	for (auto& player : *players) {
+		
+		
+		if (player.LeagueIndex == 0) {		//Find unranked players
+			
+		}
+	}
+	// 1) Find all distances between newPlayer and players
+
+	//double scoreOfNewPlayer = calculScoresOfPlayers(players,newPlayer);
+	//double scoreOfKnownPlayers;
+
+	// 2) Ordonner les distances (Croissantes)
+
+
+
+	// 3) Predire le ranking du newPlayer selon les points les plus proches
+
+
+
+}
 
 int main() {
 	std::cout << "Hello World!" << std::endl;
@@ -266,6 +311,7 @@ int main() {
 		split_data(&players, nb_fold, i, &training, &test);
 
 		normalizePlayers(&players);
+		calculScoresOfPlayers(&players);
 
 		trim(&training);
 
