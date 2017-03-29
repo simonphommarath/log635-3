@@ -41,6 +41,23 @@ public:
 
 };
 
+class PairDistance
+{
+public:
+	float Distance;
+	int RankGamerId;
+	int NonRankGamerId;
+	int RankGamerLeagueIndex;
+	int NonRankGamerLeagueIndex;
+};
+
+struct less_than_key
+{
+	inline bool operator() (const PairDistance& pairDistance1, const PairDistance& pairDistance2)
+	{
+		return (pairDistance1.Distance < pairDistance2.Distance);
+	}
+};
 
 std::vector<std::string> split(const std::string &s, char c) {
 	std::string buff{ "" };
@@ -151,10 +168,6 @@ void split_data(std::vector<Player> *players, int nb_fold, int i,
 
 void trim(std::vector<Player> *players)
 {
-}
-
-void train(std::vector<Player> *players)
-{
 
 }
 
@@ -166,7 +179,8 @@ void rate(std::vector<Player> *players)
 	//std::cout << "the score is " << score << std::endl;
 }
 
-void normalizePlayerFieldIndexOf(std::vector<Player> *players, int playerFieldValue) {
+void normalizePlayerFieldIndexOf(std::vector<Player> *players, int playerFieldValue) 
+{
 	float minValue = 99999.0;
 	float maxValue = 0.0;
 	float etendueValeur = 0.0;
@@ -175,7 +189,7 @@ void normalizePlayerFieldIndexOf(std::vector<Player> *players, int playerFieldVa
 	case 1://GameID												PAS IMPORTANT
 		break;
 	case 2://LeagueIndex										10/10
-		//Pas besoin de normalisation ecart trop petit
+		   //Pas besoin de normalisation ecart trop petit
 		break;
 	case 3://Age												PAS IMPORTANT
 		break;
@@ -184,7 +198,7 @@ void normalizePlayerFieldIndexOf(std::vector<Player> *players, int playerFieldVa
 	case 5://TotalHours											PAS IMPORTANT
 		break;
 	case 6://APM													9/10
-		// Find min max etendu
+		   // Find min max etendu
 		for (auto& player : *players) {
 			if (player.APM < minValue)
 				minValue = player.APM;
@@ -234,10 +248,10 @@ void normalizePlayerFieldIndexOf(std::vector<Player> *players, int playerFieldVa
 }
 
 /*
-	Normalize players informations :
-	Solution 1 Note de cours : Vi' = (Vi-Vmin)/Ek
-	+
-	Solution 3 Note de cours : Approx, connaissance du domaine
+Normalize players informations :
+Solution 1 Note de cours : Vi' = (Vi-Vmin)/Ek
++
+Solution 3 Note de cours : Approx, connaissance du domaine
 */
 void normalizePlayers(std::vector<Player> *players)
 {
@@ -245,16 +259,17 @@ void normalizePlayers(std::vector<Player> *players)
 	int minValue = 0;
 
 	//Second param is the index of the field value
-	normalizePlayerFieldIndexOf(players,6);
-	
+	normalizePlayerFieldIndexOf(players, 6);
+
 	/*for (auto& player : *players)		uncomment for test
-		std::cout << player.APM << std::endl;		uncomment for test*/
+	std::cout << player.APM << std::endl;		uncomment for test*/
 }
 
 /*
-	SCORE FUNCTION WITH 6 IMPORTANTS PARAMS !!!
+SCORE FUNCTION WITH 6 IMPORTANTS PARAMS !!!
 */
-void calculScoresOfPlayers(std::vector<Player> *players) {
+void calculScoresOfPlayers(std::vector<Player> *players) 
+{
 	// Avec top 6 priority data field : 
 	for (auto& player : *players) {
 		player.score = ((player.ComplexAbilitiesUsed + player.NumberOfPACs + player.TotalMapExplored + player.UniqueHotkeys) / player.APM);
@@ -262,66 +277,103 @@ void calculScoresOfPlayers(std::vector<Player> *players) {
 	}
 }
 
+void KNNAlgorithm(std::vector<Player> *rankedPlayers, std::vector<Player> *nonRankPlayers, int k)
+{
+	double perfectMatch(0);
+	double closeMatch(0);
+	double wrongMatch(0);
 
-/*
-	NON COMPLETE
-*/
-void KNNAlgorithm(std::vector<Player> *players, int k){
-	int nbUnrankedPlayers = 0;
+	for (auto& nonRankPlayer : *nonRankPlayers) {
+		std::vector<PairDistance> playerDistances;
 
-	//SORT : HAVING ISSUE 
+		// Calculated distance between players
+		for (auto& rankedPlayer : *rankedPlayers) {
+			float distance = sqrt(
+				pow(2, (nonRankPlayer.APM - rankedPlayer.APM)) +
+				pow(2, (nonRankPlayer.SelectByHotkeys - rankedPlayer.SelectByHotkeys)) +
+				pow(2, (nonRankPlayer.AssignToHotkeys - rankedPlayer.AssignToHotkeys)) +
+				pow(2, (nonRankPlayer.MinimapAttacks - rankedPlayer.MinimapAttacks)) +
+				pow(2, (nonRankPlayer.NumberOfPACs - rankedPlayer.NumberOfPACs)) +
+				pow(2, (nonRankPlayer.GapBetweenPACs - rankedPlayer.GapBetweenPACs)) +
+				pow(2, (nonRankPlayer.ActionLatency - rankedPlayer.ActionLatency)) +
+				pow(2, (nonRankPlayer.TotalMapExplored - rankedPlayer.TotalMapExplored)) +
+				pow(2, (nonRankPlayer.WorkersMade - rankedPlayer.WorkersMade))
+			);
+			PairDistance pairDistance;
+			pairDistance.Distance = distance;
+			pairDistance.RankGamerId = rankedPlayer.GameID;
+			pairDistance.NonRankGamerId = nonRankPlayer.GameID;
 
-	//std::sort(players.begin(), players.end());
-	//std::sort(&players[20], &players[5]);
-	for (auto& player : *players) {
-		
-		
-		if (player.LeagueIndex == 0) {		//Find unranked players
-			
+			pairDistance.RankGamerLeagueIndex = rankedPlayer.LeagueIndex;
+			pairDistance.NonRankGamerLeagueIndex = nonRankPlayer.LeagueIndex;
+
+			playerDistances.push_back(pairDistance);
 		}
+
+		// Sort distance
+		std::sort(playerDistances.begin(), playerDistances.end(), less_than_key());
+		playerDistances.resize(k);
+
+		int rank[8] = { 0,0,0,0,0,0,0,0 };
+		int highestLeague;
+		int maxValue(0);
+
+		// Get closest league
+		for (auto& playerDistance : playerDistances) {
+			rank[playerDistance.RankGamerLeagueIndex - 1]++;
+			if (rank[playerDistance.RankGamerLeagueIndex - 1] > maxValue) {
+				maxValue = rank[playerDistance.RankGamerLeagueIndex - 1];
+				//TO FIX: multiple highestLeague
+				highestLeague = playerDistance.RankGamerLeagueIndex;
+			}
+		}
+
+		//std::cout << "PLAYER:" << nonRankPlayer.GameID << " League:" << highestLeague << " Real League:" << nonRankPlayer.LeagueIndex << std::endl;
+
+		if (highestLeague == nonRankPlayer.LeagueIndex)
+			perfectMatch++;
+		else if (highestLeague == nonRankPlayer.LeagueIndex + 1 || highestLeague == nonRankPlayer.LeagueIndex - 1)
+			closeMatch++;
+		else
+			wrongMatch++;
 	}
-	// 1) Find all distances between newPlayer and players
 
-	//double scoreOfNewPlayer = calculScoresOfPlayers(players,newPlayer);
-	//double scoreOfKnownPlayers;
+	std::cout << "Perfect Match: " << perfectMatch << std::endl;
+	std::cout << "Close Match: " << closeMatch << std::endl;
+	std::cout << "Wrong Match: " << wrongMatch << std::endl;
 
-	// 2) Ordonner les distances (Croissantes)
-
-
-
-	// 3) Predire le ranking du newPlayer selon les points les plus proches
-
-
-
+	std::cout << "Perfect Match %: " << (perfectMatch / nonRankPlayers->size()) * 100 << std::endl;
+	std::cout << "Close Match %: " << ((perfectMatch + closeMatch) / nonRankPlayers->size()) * 100 << std::endl;
 }
 
-int main() {
+int main() 
+{
 	std::cout << "Hello World!" << std::endl;
-
-
 	std::string path("data.csv");
 	//String path = chose_file()
 	//std::string file = read_file(path );
 	std::vector<Player> players = read_csv(path);
 	int nb_fold = 5;
+
 	for (int i = 0; i < nb_fold; ++i)
 	{
 		std::vector<Player> training;
 		std::vector<Player> test;
 		split_data(&players, nb_fold, i, &training, &test);
 
-		normalizePlayers(&players);
-		calculScoresOfPlayers(&players);
+		//normalizePlayers(&players);
+		//calculScoresOfPlayers(&players);
 
-		trim(&training);
+		//trim(&training);
 
-		train(&training);
+		std::cout << "KNNAlgorithm Fold: "<< i << std::endl;
+		KNNAlgorithm(&training, &test, 16);
 		//validate(&test);
 
-		rate(&players);
+		//rate(&players);
+
+		std::cout << std::endl;
 	}
-
-
-
+	
 	return 0;
 }
