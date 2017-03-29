@@ -265,6 +265,32 @@ void normalizePlayers(std::vector<Player> *players)
 	std::cout << player.APM << std::endl;		uncomment for test*/
 }
 
+template<class Property>
+void normalize_attribute(std::vector<Player> * players, Property  prop)
+{
+	auto bounds = std::minmax_element(players->begin(), players->end(),
+		[prop](Player p1, Player p2) {return *prop(&p1) < *prop(&p2);});
+
+	for (auto player : *players) {
+		int min = *prop(&*bounds.first);
+		int max = *prop(&*bounds.second);
+		*prop(&player) = (*prop(&player) - min) / (max - min);
+	}
+}
+
+void normalize(std::vector<Player> *players)
+{
+	normalize_attribute(players, [](Player* p) -> float* {return &(p->APM);});
+	normalize_attribute(players, [](Player* p) -> float* {return &(p->SelectByHotkeys);});
+	normalize_attribute(players, [](Player* p) -> float* {return &(p->AssignToHotkeys);});
+	normalize_attribute(players, [](Player* p) -> float* {return &(p->MinimapAttacks);});
+	normalize_attribute(players, [](Player* p) -> float* {return &(p->NumberOfPACs);});
+	normalize_attribute(players, [](Player* p) -> float* {return &(p->GapBetweenPACs);});
+	normalize_attribute(players, [](Player* p) -> float* {return &(p->ActionLatency);});
+	normalize_attribute(players, [](Player* p) -> float* {return &(p->TotalMapExplored);});
+	normalize_attribute(players, [](Player* p) -> float* {return &(p->WorkersMade);});
+}
+
 /*
 SCORE FUNCTION WITH 6 IMPORTANTS PARAMS !!!
 */
@@ -288,6 +314,7 @@ void KNNAlgorithm(std::vector<Player> *rankedPlayers, std::vector<Player> *nonRa
 
 		// Calculated distance between players
 		for (auto& rankedPlayer : *rankedPlayers) {
+			// Number of attributs doesn't really affect the result
 			float distance = sqrt(
 				pow(2, (nonRankPlayer.APM - rankedPlayer.APM)) +
 				pow(2, (nonRankPlayer.SelectByHotkeys - rankedPlayer.SelectByHotkeys)) +
@@ -299,6 +326,7 @@ void KNNAlgorithm(std::vector<Player> *rankedPlayers, std::vector<Player> *nonRa
 				pow(2, (nonRankPlayer.TotalMapExplored - rankedPlayer.TotalMapExplored)) +
 				pow(2, (nonRankPlayer.WorkersMade - rankedPlayer.WorkersMade))
 			);
+
 			PairDistance pairDistance;
 			pairDistance.Distance = distance;
 			pairDistance.RankGamerId = rankedPlayer.GameID;
@@ -359,6 +387,10 @@ int main()
 	{
 		std::vector<Player> training;
 		std::vector<Player> test;
+
+		normalize(&training);
+		normalize(&test);
+
 		split_data(&players, nb_fold, i, &training, &test);
 
 		//normalizePlayers(&players);
