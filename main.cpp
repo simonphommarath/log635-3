@@ -165,7 +165,147 @@ void split_data(std::vector<Player> *players, int nb_fold, int i,
 		training->insert(training->end(), first, last);
 	}
 }
+/*
+class Attribut
+{
+public:
+	std::string AttributName;
+	float Mean;
+	float StandartDeviation;
 
+	Attribut(std::string attributName, float average);
+
+};
+
+Attribut::Attribut(std::string attributName, float mean)
+{
+	AttributName = attributName;
+	Mean = mean;
+}
+*/
+void NoiseRemoval(std::vector<Player> *players)
+{
+	
+	float totalAPM(0.0);
+	float totalSelectByHotkeys(0.0);
+	float totalAssignToHotkeys(0.0);
+	float totalMinimapAttacks(0.0);
+	float totalNumberOfPACs(0.0);
+	float totalGapBetweenPACs(0.0);
+	float totalActionLatency(0.0);
+	float totalTotalMapExplored(0.0);
+	float totalWorkersMade(0.0);
+
+	for (auto& player : *players) {
+		totalAPM += player.APM;
+		totalSelectByHotkeys += player.SelectByHotkeys;
+		totalAssignToHotkeys += player.AssignToHotkeys;
+		totalMinimapAttacks += player.MinimapAttacks;
+		totalNumberOfPACs += player.NumberOfPACs;
+		totalGapBetweenPACs += player.GapBetweenPACs;
+		totalActionLatency += player.ActionLatency;
+		totalTotalMapExplored += player.TotalMapExplored;
+		totalWorkersMade += player.WorkersMade;
+	}
+
+
+	//std::vector<Attribut> attributs;
+
+	//attributs.push_back(Attribut("APM", totalAPM / players->size()));
+	//attributs.push_back(Attribut("SelectByHotkeys", totalSelectByHotkeys / players->size()));
+	//attributs.push_back(Attribut("AssignToHotkeys", totalAssignToHotkeys / players->size()));
+	//attributs.push_back(Attribut("MinimapAttacks", totalMinimapAttacks / players->size()));
+	//attributs.push_back(Attribut("NumberOfPACs", totalNumberOfPACs / players->size()));
+	//attributs.push_back(Attribut("GapBetweenPACs", totalGapBetweenPACs / players->size()));
+	//attributs.push_back(Attribut("ActionLatency", totalActionLatency / players->size()));
+	//attributs.push_back(Attribut("TotalMapExplored", totalTotalMapExplored / players->size()));
+	//attributs.push_back(Attribut("WorkersMade", totalWorkersMade / players->size()));
+
+	float averageAPM(totalAPM / players->size());
+	float averageSelectByHotkeys(totalSelectByHotkeys / players->size());
+	float averageAssignToHotkeys(totalAssignToHotkeys / players->size());
+	float averageMinimapAttacks(totalMinimapAttacks / players->size());
+	float averageNumberOfPACs(totalNumberOfPACs / players->size());
+	float averageGapBetweenPACs(totalGapBetweenPACs / players->size());
+	float averageActionLatency(totalActionLatency / players->size());
+	float averageTotalMapExplored(totalTotalMapExplored / players->size());
+	float averageWorkersMade(totalWorkersMade / players->size());
+
+	std::cout << std::endl << "Average" << std::endl;
+
+	std::cout << averageAPM << std::endl;
+	std::cout << averageSelectByHotkeys << std::endl;
+	std::cout << averageAssignToHotkeys << std::endl;
+	std::cout << averageMinimapAttacks << std::endl;
+	std::cout << averageNumberOfPACs << std::endl;
+	std::cout << averageGapBetweenPACs << std::endl;
+	std::cout << averageActionLatency << std::endl;
+	std::cout << averageTotalMapExplored << std::endl;
+	std::cout << averageWorkersMade << std::endl;
+
+	float totalAPMSub(0.0);
+	float totalSelectByHotkeysSub(0.0);
+	float totalAssignToHotkeysSub(0.0);
+	float totalMinimapAttacksSub(0.0);
+	float totalNumberOfPACsSub(0.0);
+	float totalGapBetweenPACsSub(0.0);
+	float totalActionLatencySub(0.0);
+	float totalTotalMapExploredSub(0.0);
+	float totalWorkersMadeSub(0.0);
+
+	for (auto& player : *players) {
+		totalAPMSub += pow((player.APM - averageAPM), 2);
+		totalSelectByHotkeysSub += pow(player.SelectByHotkeys - averageSelectByHotkeys, 2);
+		totalAssignToHotkeysSub += pow(player.AssignToHotkeys - averageAssignToHotkeys, 2);
+		totalMinimapAttacksSub += pow(player.MinimapAttacks - averageMinimapAttacks, 2);
+		totalNumberOfPACsSub += pow(player.NumberOfPACs - averageNumberOfPACs, 2);
+		totalGapBetweenPACsSub += pow(player.GapBetweenPACs - averageGapBetweenPACs, 2);
+		totalActionLatencySub += pow(player.ActionLatency - averageActionLatency, 2);
+		totalTotalMapExploredSub += pow(player.TotalMapExplored - averageTotalMapExplored, 2);
+		totalWorkersMadeSub += pow(player.WorkersMade - averageWorkersMade, 2);
+	}
+
+
+	std::cout << std::endl << "SUM of value minus average powered by 2" << std::endl;
+	std::cout << totalAPMSub << std::endl;
+	std::cout << totalSelectByHotkeysSub << std::endl;
+	std::cout << totalAssignToHotkeysSub << std::endl;
+	std::cout << totalMinimapAttacksSub << std::endl;
+	std::cout << totalNumberOfPACsSub << std::endl;
+	std::cout << totalGapBetweenPACsSub << std::endl;
+	std::cout << totalActionLatencySub << std::endl;
+	std::cout << totalTotalMapExploredSub << std::endl;
+	std::cout << totalWorkersMadeSub << std::endl;
+	
+
+	float size(players->size());
+	std::cout << std::endl << "Size" << std::endl;
+	std::cout << size << std::endl;
+
+	float StandardDevAPM(sqrt((1.0 /size)*totalAPMSub));
+	float StandardDevSelectByHotkeys(sqrt((1.0 / size)*totalSelectByHotkeysSub));
+	float StandardDevAssignToHotkeys(sqrt((1.0 / size)*totalAssignToHotkeysSub));
+	float StandardDevMinimapAttacks(sqrt((1.0 / size)*totalMinimapAttacksSub));
+	float StandardDevNumberOfPACs(sqrt((1.0 / size)*totalNumberOfPACsSub));
+	float StandardDevGapBetweenPACs(sqrt((1.0 / size)*totalGapBetweenPACsSub));
+	float StandardDevActionLatency(sqrt((1.0 / size)*totalActionLatencySub));
+	float StandardDevTotalMapExplored(sqrt((1.0 / size)*totalTotalMapExploredSub));
+	float StandardDevWorkersMade(sqrt((1.0 / size)*totalWorkersMadeSub));
+
+	std::cout << std::endl << "Standard Deviation" << std::endl;
+
+	std::cout << StandardDevAPM << std::endl;
+	std::cout << StandardDevSelectByHotkeys << std::endl;
+	std::cout << StandardDevAssignToHotkeys << std::endl;
+	std::cout << StandardDevMinimapAttacks << std::endl;
+	std::cout << StandardDevNumberOfPACs << std::endl;
+	std::cout << StandardDevGapBetweenPACs << std::endl;
+	std::cout << StandardDevActionLatency << std::endl;
+	std::cout << StandardDevTotalMapExplored << std::endl;
+	std::cout << StandardDevWorkersMade << std::endl;
+}
+
+/*
 void trim(std::vector<Player> *players)
 {
 
@@ -179,7 +319,7 @@ void rate(std::vector<Player> *players)
 	//std::cout << "the score is " << score << std::endl;
 }
 
-void normalizePlayerFieldIndexOf(std::vector<Player> *players, int playerFieldValue) 
+void normalizePlayerFieldIndexOf(std::vector<Player> *players, int playerFieldValue)
 {
 	float minValue = 99999.0;
 	float maxValue = 0.0;
@@ -247,12 +387,12 @@ void normalizePlayerFieldIndexOf(std::vector<Player> *players, int playerFieldVa
 	}
 }
 
-/*
-Normalize players informations :
-Solution 1 Note de cours : Vi' = (Vi-Vmin)/Ek
-+
-Solution 3 Note de cours : Approx, connaissance du domaine
-*/
+
+//Normalize players informations :
+//Solution 1 Note de cours : Vi' = (Vi-Vmin)/Ek
+//+
+//Solution 3 Note de cours : Approx, connaissance du domaine
+
 void normalizePlayers(std::vector<Player> *players)
 {
 	int nb_element = players->size();
@@ -261,14 +401,13 @@ void normalizePlayers(std::vector<Player> *players)
 	//Second param is the index of the field value
 	normalizePlayerFieldIndexOf(players, 6);
 
-	/*for (auto& player : *players)		uncomment for test
-	std::cout << player.APM << std::endl;		uncomment for test*/
+	//for (auto& player : *players)		//uncomment for test
+	//std::cout << player.APM << std::endl;		//uncomment for test
 }
 
-/*
-SCORE FUNCTION WITH 6 IMPORTANTS PARAMS !!!
-*/
-void calculScoresOfPlayers(std::vector<Player> *players) 
+
+//SCORE FUNCTION WITH 6 IMPORTANTS PARAMS !!!
+void calculScoresOfPlayers(std::vector<Player> *players)
 {
 	// Avec top 6 priority data field : 
 	for (auto& player : *players) {
@@ -276,6 +415,7 @@ void calculScoresOfPlayers(std::vector<Player> *players)
 		std::cout << "player has score of : " << player.score << std::endl;
 	}
 }
+*/
 
 void KNNAlgorithm(std::vector<Player> *rankedPlayers, std::vector<Player> *nonRankPlayers, int k)
 {
@@ -289,15 +429,15 @@ void KNNAlgorithm(std::vector<Player> *rankedPlayers, std::vector<Player> *nonRa
 		// Calculated distance between players
 		for (auto& rankedPlayer : *rankedPlayers) {
 			float distance = sqrt(
-				pow(2, (nonRankPlayer.APM - rankedPlayer.APM)) +
-				pow(2, (nonRankPlayer.SelectByHotkeys - rankedPlayer.SelectByHotkeys)) +
-				pow(2, (nonRankPlayer.AssignToHotkeys - rankedPlayer.AssignToHotkeys)) +
-				pow(2, (nonRankPlayer.MinimapAttacks - rankedPlayer.MinimapAttacks)) +
-				pow(2, (nonRankPlayer.NumberOfPACs - rankedPlayer.NumberOfPACs)) +
-				pow(2, (nonRankPlayer.GapBetweenPACs - rankedPlayer.GapBetweenPACs)) +
-				pow(2, (nonRankPlayer.ActionLatency - rankedPlayer.ActionLatency)) +
-				pow(2, (nonRankPlayer.TotalMapExplored - rankedPlayer.TotalMapExplored)) +
-				pow(2, (nonRankPlayer.WorkersMade - rankedPlayer.WorkersMade))
+				pow((nonRankPlayer.APM - rankedPlayer.APM),2) +
+				pow((nonRankPlayer.SelectByHotkeys - rankedPlayer.SelectByHotkeys), 2) +
+				pow((nonRankPlayer.AssignToHotkeys - rankedPlayer.AssignToHotkeys), 2) +
+				pow((nonRankPlayer.MinimapAttacks - rankedPlayer.MinimapAttacks), 2) +
+				pow((nonRankPlayer.NumberOfPACs - rankedPlayer.NumberOfPACs), 2) +
+				pow((nonRankPlayer.GapBetweenPACs - rankedPlayer.GapBetweenPACs), 2) +
+				pow((nonRankPlayer.ActionLatency - rankedPlayer.ActionLatency), 2) +
+				pow((nonRankPlayer.TotalMapExplored - rankedPlayer.TotalMapExplored), 2) +
+				pow((nonRankPlayer.WorkersMade - rankedPlayer.WorkersMade), 2)
 			);
 			PairDistance pairDistance;
 			pairDistance.Distance = distance;
@@ -315,7 +455,7 @@ void KNNAlgorithm(std::vector<Player> *rankedPlayers, std::vector<Player> *nonRa
 		playerDistances.resize(k);
 
 		int rank[8] = { 0,0,0,0,0,0,0,0 };
-		int highestLeague;
+		int highestLeague(0);
 		int maxValue(0);
 
 		// Get closest league
@@ -346,7 +486,7 @@ void KNNAlgorithm(std::vector<Player> *rankedPlayers, std::vector<Player> *nonRa
 	std::cout << "Close Match %: " << ((perfectMatch + closeMatch) / nonRankPlayers->size()) * 100 << std::endl;
 }
 
-int main() 
+int main()
 {
 	std::cout << "Hello World!" << std::endl;
 	std::string path("data.csv");
@@ -366,7 +506,9 @@ int main()
 
 		//trim(&training);
 
-		std::cout << "KNNAlgorithm Fold: "<< i << std::endl;
+		NoiseRemoval(&training);
+
+		std::cout << std::endl << "KNN Algorithm Fold: " << i << std::endl;
 		KNNAlgorithm(&training, &test, 16);
 		//validate(&test);
 
@@ -374,6 +516,6 @@ int main()
 
 		std::cout << std::endl;
 	}
-	
+
 	return 0;
 }
