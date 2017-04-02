@@ -357,7 +357,6 @@ void KNNAlgorithm(std::vector<Player> *rankedPlayers, std::vector<Player> *nonRa
             nonRankPlayer.Guess.push_back(((double)rank[i])/k);
         }
 
-        //std::cout << "PLAYER:" << nonRankPlayer.GameID << " League:" << highestLeague << " Real League:" << nonRankPlayer.LeagueIndex << std::endl;
 
         if (highestLeague == nonRankPlayer.LeagueIndex) {
             perfectMatch++;
@@ -459,11 +458,11 @@ void normaliz_attribute(std::vector<Player> * players, Property  prop )
     auto bounds = std::minmax_element(players->begin(), players->end(),
                                       [prop](Player p1, Player p2) {return *prop(&p1) <= *prop(&p2);});
 
+    double min = *prop(&*bounds.first);
+    double max = *prop(&*bounds.second);
+
     for (auto& player : *players) {
-        if (*prop(&player) == 0) { continue;
-        }
-        double min = *prop(&*bounds.first);
-        double max = *prop(&*bounds.second);
+        if (*prop(&player) == 0) { continue; }
         *prop(&player) = (*prop(&player) - min) / (max - min);
     }
 }
