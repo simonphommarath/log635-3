@@ -47,10 +47,10 @@ private :
     //nn_actfun activation_output;
 
     /* Total number of weights, and size of weights buffer. */
-    int total_weights;
+    int total_weights{};
 
     /* Total number of neurons + inputs and size of output buffer. */
-    int total_neurons;
+    int total_neurons{};
 
     Layer input_layer;
     std::vector<Layer> hidden_layers;
@@ -69,7 +69,7 @@ private :
 
    public :
     // Constructor
-    NN(int inputs, int hidden_layers, int hidden, int outputs);
+    NN(int inputs, int nb_hidden_layers, int hidden, int outputs);
 
     /* Sets weights randomly. Called by init. */
     void randomize();
