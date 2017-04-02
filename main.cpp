@@ -24,6 +24,7 @@ class Player
 public:
     int GameID;
     int LeagueIndex;
+    std::vector<double> Guess;
     int ActualLeagueIndex;
     int Age;
     int HoursPerWeek;
@@ -43,7 +44,7 @@ public:
     double UniqueUnitsMade;
     double ComplexUnitsMade;
     double ComplexAbilitiesUsed;
-    double score;
+    //double score;
 
     std::vector<double> toArray()
     {
@@ -148,7 +149,7 @@ std::vector<Player> read_csv(const std::string& path)
             player.UniqueUnitsMade = std::stof(data[17]);
             player.ComplexUnitsMade = std::stof(data[18]);
             player.ComplexAbilitiesUsed = std::stof(data[19]);
-            player.score = 0;
+            //player.score = 0;
 
             players.push_back(player);
 
@@ -352,6 +353,10 @@ void KNNAlgorithm(std::vector<Player> *rankedPlayers, std::vector<Player> *nonRa
             }
         }
 
+        for (int i =0; i < 8; i++){
+            nonRankPlayer.Guess.push_back(((double)rank[i])/k);
+        }
+
         //std::cout << "PLAYER:" << nonRankPlayer.GameID << " League:" << highestLeague << " Real League:" << nonRankPlayer.LeagueIndex << std::endl;
 
         if (highestLeague == nonRankPlayer.LeagueIndex) {
@@ -362,8 +367,8 @@ void KNNAlgorithm(std::vector<Player> *rankedPlayers, std::vector<Player> *nonRa
             wrongMatch++;
         }
     }
-
-    std::cout << "Perfect Match: " << perfectMatch << std::endl;
+    std::cout << std::endl  << "k: " << k;
+    std::cout << std::endl << "Perfect Match: " << perfectMatch << std::endl;
     std::cout << "Close Match: " << closeMatch << std::endl;
     std::cout << "Wrong Match: " << wrongMatch << std::endl;
 
@@ -376,21 +381,15 @@ void train(std::vector<Player> *training, std::vector<Player> *test)
 
     std::srand(std::time(nullptr));
     NN nn(9, 1, 8, 8);
-    int run = 50;
-    double learn_rate = 0.01;
+    int run = 500;
+    double learn_rate = 0.2;
     double score = 0;
     double succes_rate = 0.0;
-    for (int j =0; j < 20000 / run; j++) {
-        //        if (succes_rate > 0.28f)
-        //            learn_rate = 0.1;
-        //        if (succes_rate > 0.35f)
-        //            learn_rate = 0.05;
-        //        if (succes_rate > 0.40f)
-        //            learn_rate = 0.01;
-        //        if (succes_rate > 0.45f)
-        //            learn_rate = 0.005;
-        //        if (succes_rate > 0.50f)
-        //            learn_rate = 0.001;
+    for (int j =0; j < 500 / run; j++) {
+        double perfectMatch(0);
+        double closeMatch(0);
+        double wrongMatch(0);
+        learn_rate /= 2;
 
         for (int i =0; i < run; i++)
         {
@@ -415,6 +414,10 @@ void train(std::vector<Player> *training, std::vector<Player> *test)
             std::vector<double> input = player.toArray();
             std::vector<double> guess = nn.run(&input);
 
+            for(int i =0; i<8; i++){
+                player.Guess[i] += guess[i];
+                player.Guess[i] /= 2;
+            }
             double val=0;
             int index=0;
             for (int i= 0; i<8; i++)
@@ -428,13 +431,23 @@ void train(std::vector<Player> *training, std::vector<Player> *test)
                 }
             }
             player.LeagueIndex = index + 1;
-            score += static_cast<double>(player.LeagueIndex == player.ActualLeagueIndex);
-            //display result
-            //            std::cout << " DESIRED OUTPUT: " << player.ActualLeagueIndex << " NET RESULT: "
-            //                      << player.LeagueIndex << std::endl;
+            if (player.ActualLeagueIndex == player.LeagueIndex) {
+                perfectMatch++;
+            } else if (player.ActualLeagueIndex == player.LeagueIndex + 1 || player.ActualLeagueIndex == player.LeagueIndex - 1) {
+                closeMatch++;
+            } else {
+                wrongMatch++;
+            }
         }
         succes_rate = score / test->size();
-        std::cout << "NN run: " << j * run << " the score is " << score  << " (" << succes_rate << ")" << std::endl;
+        //std::cout << "NN run: " << j * run << " the score is " << score  << " (" << succes_rate << ")" << std::endl;
+        std::cout << std::endl << "NN" << std::endl;
+        std::cout << "Perfect Match: " << perfectMatch << std::endl;
+        std::cout << "Close Match: " << closeMatch << std::endl;
+        std::cout << "Wrong Match: " << wrongMatch << std::endl;
+
+        std::cout << "Perfect Match %: " << (perfectMatch / test->size()) * 100 << std::endl;
+        std::cout << "Close Match %: " << ((perfectMatch + closeMatch) / test->size()) * 100 << std::endl;
     }
 
     //nn_free(nn);
@@ -468,6 +481,42 @@ void normaliz(std::vector<Player> *players)
     normaliz_attribute(players,  [](Player* p) -> double* {return &(p->WorkersMade);});
 }
 
+void evaluate(std::vector<Player> *players)
+{
+    double perfectMatch(0);
+    double closeMatch(0);
+    double wrongMatch(0);
+    for (auto& player : *players){
+        double league(0);
+        int league_index(0);
+
+        int i(1);
+        for(auto l : player.Guess){
+            if(l > league){
+                league = l;
+                league_index = i;
+            }
+            ++i;
+        }
+
+        if (player.ActualLeagueIndex == league_index) {
+            perfectMatch++;
+        } else if (player.ActualLeagueIndex == league_index + 1 || player.ActualLeagueIndex == league_index - 1) {
+            closeMatch++;
+        } else {
+            wrongMatch++;
+        }
+    }
+
+    std::cout << std::endl << "Moyen des 2 algo" << std::endl;
+    std::cout << "Perfect Match: " << perfectMatch << std::endl;
+    std::cout << "Close Match: " << closeMatch << std::endl;
+    std::cout << "Wrong Match: " << wrongMatch << std::endl;
+
+    std::cout << "Perfect Match %: " << (perfectMatch / players->size()) * 100 << std::endl;
+    std::cout << "Close Match %: " << ((perfectMatch + closeMatch) / players->size()) * 100 << std::endl;
+}
+
 int main()
 {
     std::cout << "Hello World!" << std::endl;
@@ -477,7 +526,8 @@ int main()
 
     normaliz(&players);
 
-    for (int i = 0; i < nb_fold; ++i)
+    int i =0;
+    //for (int i = 0; i < nb_fold; ++i)
     {
         std::vector<Player> training;
         std::vector<Player> test;
@@ -487,9 +537,12 @@ int main()
         NoiseRemoval(&training);
 
         std::cout << std::endl << "KNN Algorithm Fold: " << i << std::endl;
-        KNNAlgorithm(&training, &test, 16);
+
+        KNNAlgorithm(&training, &test, 8);
 
         train(&training, &test);
+
+        evaluate(&test);
 
         std::cout << std::endl;
     }
