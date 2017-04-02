@@ -12,6 +12,12 @@
 #include <sstream>
 #include <vector>
 #include <iterator>
+#include <cmath>
+#include <ctime>
+
+#include "nn.h"
+#include "layer.h"
+#include "neuron.h"
 
 class Player
 {
@@ -22,23 +28,39 @@ public:
 	int Age;
 	int HoursPerWeek;
 	int TotalHours;
-	float APM;
-	float SelectByHotkeys;
-	float AssignToHotkeys;
-	float UniqueHotkeys;
-	float MinimapAttacks;
-	float MinimapRightClicks;
-	float NumberOfPACs;
-	float GapBetweenPACs;
-	float ActionLatency;
-	float ActionsInPAC;
-	float TotalMapExplored;
-	float WorkersMade;
-	float UniqueUnitsMade;
-	float ComplexUnitsMade;
-	float ComplexAbilitiesUsed;
-	float score;
+    double APM;
+    double SelectByHotkeys;
+    double AssignToHotkeys;
+    double UniqueHotkeys;
+    double MinimapAttacks;
+    double MinimapRightClicks;
+    double NumberOfPACs;
+    double GapBetweenPACs;
+    double ActionLatency;
+    double ActionsInPAC;
+    double TotalMapExplored;
+    double WorkersMade;
+    double UniqueUnitsMade;
+    double ComplexUnitsMade;
+    double ComplexAbilitiesUsed;
+    double score;
 
+    std::vector<double> toArray()
+    {
+        std::vector<double> array;
+        array.reserve(9);
+        array.push_back(APM);
+        array.push_back(SelectByHotkeys);
+        array.push_back(AssignToHotkeys);
+        array.push_back(MinimapAttacks);
+        array.push_back(NumberOfPACs);
+        array.push_back(GapBetweenPACs);
+        array.push_back(ActionLatency);
+        array.push_back(TotalMapExplored);
+        array.push_back(WorkersMade);
+
+        return array;
+    }
 };
 
 class PairDistance
@@ -165,24 +187,7 @@ void split_data(std::vector<Player> *players, int nb_fold, int i,
 		training->insert(training->end(), first, last);
 	}
 }
-/*
-class Attribut
-{
-public:
-	std::string AttributName;
-	float Mean;
-	float StandartDeviation;
 
-	Attribut(std::string attributName, float average);
-
-};
-
-Attribut::Attribut(std::string attributName, float mean)
-{
-	AttributName = attributName;
-	Mean = mean;
-}
-*/
 void NoiseRemoval(std::vector<Player> *players)
 {
 	
@@ -208,18 +213,6 @@ void NoiseRemoval(std::vector<Player> *players)
 		totalWorkersMade += player.WorkersMade;
 	}
 
-
-	//std::vector<Attribut> attributs;
-
-	//attributs.push_back(Attribut("APM", totalAPM / players->size()));
-	//attributs.push_back(Attribut("SelectByHotkeys", totalSelectByHotkeys / players->size()));
-	//attributs.push_back(Attribut("AssignToHotkeys", totalAssignToHotkeys / players->size()));
-	//attributs.push_back(Attribut("MinimapAttacks", totalMinimapAttacks / players->size()));
-	//attributs.push_back(Attribut("NumberOfPACs", totalNumberOfPACs / players->size()));
-	//attributs.push_back(Attribut("GapBetweenPACs", totalGapBetweenPACs / players->size()));
-	//attributs.push_back(Attribut("ActionLatency", totalActionLatency / players->size()));
-	//attributs.push_back(Attribut("TotalMapExplored", totalTotalMapExplored / players->size()));
-	//attributs.push_back(Attribut("WorkersMade", totalWorkersMade / players->size()));
 
 	float averageAPM(totalAPM / players->size());
 	float averageSelectByHotkeys(totalSelectByHotkeys / players->size());
@@ -254,7 +247,7 @@ void NoiseRemoval(std::vector<Player> *players)
 	float totalWorkersMadeSub(0.0);
 
 	for (auto& player : *players) {
-		totalAPMSub += pow((player.APM - averageAPM), 2);
+        totalAPMSub += pow((player.APM - averageAPM), 2);
 		totalSelectByHotkeysSub += pow(player.SelectByHotkeys - averageSelectByHotkeys, 2);
 		totalAssignToHotkeysSub += pow(player.AssignToHotkeys - averageAssignToHotkeys, 2);
 		totalMinimapAttacksSub += pow(player.MinimapAttacks - averageMinimapAttacks, 2);
@@ -305,117 +298,6 @@ void NoiseRemoval(std::vector<Player> *players)
 	std::cout << StandardDevWorkersMade << std::endl;
 }
 
-/*
-void trim(std::vector<Player> *players)
-{
-
-}
-
-void rate(std::vector<Player> *players)
-{
-	int score = 0;
-	for (auto& player : *players)
-		score += player.LeagueIndex == player.LeagueIndex;
-	//std::cout << "the score is " << score << std::endl;
-}
-
-void normalizePlayerFieldIndexOf(std::vector<Player> *players, int playerFieldValue)
-{
-	float minValue = 99999.0;
-	float maxValue = 0.0;
-	float etendueValeur = 0.0;
-
-	switch (playerFieldValue) {//								IMPORTANCE : 0(low) to 10(high).
-	case 1://GameID												PAS IMPORTANT
-		break;
-	case 2://LeagueIndex										10/10
-		   //Pas besoin de normalisation ecart trop petit
-		break;
-	case 3://Age												PAS IMPORTANT
-		break;
-	case 4://HoursPerWeek										PAS IMPORTANT
-		break;
-	case 5://TotalHours											PAS IMPORTANT
-		break;
-	case 6://APM													9/10
-		   // Find min max etendu
-		for (auto& player : *players) {
-			if (player.APM < minValue)
-				minValue = player.APM;
-			if (player.APM > maxValue)
-				maxValue = player.APM;
-		}
-		etendueValeur = maxValue - minValue;
-
-		//Si ecart >50, on normalise avec Solution 1 normalisation Note de cours : Vi' = (Vi-Vmin)/Ek, cours 10-11 diapo 31
-		if (etendueValeur > 50) {
-			for (auto& player : *players) {
-				//float playerOldValueTest = player.APM;				//UNCOMMENT FOR TEST
-				player.APM = (((float)player.APM - (float)minValue) / etendueValeur);
-				//std::cout << "apm of a player was: " << playerOldValueTest << " and now is: " << player.APM << std::endl;		//UNCOMENT FOR TEST
-			}
-		}
-		break;
-	case 7://SelectByHotkeys										3/10
-		break;
-	case 8://AssignToHotkeys										1/10
-		break;
-	case 9://UniqueHotkeys											5/10
-		break;
-	case 10://MinimapAttacks									PAS IMPORTANT
-		break;
-	case 11://MinimapRightClicks								PAS IMPORTANT
-		break;
-	case 12://NumberOfPACs											7/10
-		break;
-	case 13://GapBetweenPACs									PAS IMPORTANT (trop petite donnee ms = precision mediocre)
-		break;
-	case 14://ActionLatency										PAS IMPORTANT (trop petite donnee ms = precision mediocre)
-		break;
-	case 15://ActionsInPAC											4/10
-		break;
-	case 16://TotalMapExplored										6/10
-		break;
-	case 17://WorkersMade											2/10
-		break;
-	case 18://UniqueUnitsMad										3/10
-		break;
-	case 19://ComplexUnitsMade									PAS IMPORTANT
-		break;
-	case 20://ComplexAbilitiesUsed									8/10
-		break;
-	}
-}
-
-
-//Normalize players informations :
-//Solution 1 Note de cours : Vi' = (Vi-Vmin)/Ek
-//+
-//Solution 3 Note de cours : Approx, connaissance du domaine
-
-void normalizePlayers(std::vector<Player> *players)
-{
-	int nb_element = players->size();
-	int minValue = 0;
-
-	//Second param is the index of the field value
-	normalizePlayerFieldIndexOf(players, 6);
-
-	//for (auto& player : *players)		//uncomment for test
-	//std::cout << player.APM << std::endl;		//uncomment for test
-}
-
-
-//SCORE FUNCTION WITH 6 IMPORTANTS PARAMS !!!
-void calculScoresOfPlayers(std::vector<Player> *players)
-{
-	// Avec top 6 priority data field : 
-	for (auto& player : *players) {
-		player.score = ((player.ComplexAbilitiesUsed + player.NumberOfPACs + player.TotalMapExplored + player.UniqueHotkeys) / player.APM);
-		std::cout << "player has score of : " << player.score << std::endl;
-	}
-}
-*/
 
 void KNNAlgorithm(std::vector<Player> *rankedPlayers, std::vector<Player> *nonRankPlayers, int k)
 {
@@ -486,14 +368,110 @@ void KNNAlgorithm(std::vector<Player> *rankedPlayers, std::vector<Player> *nonRa
 	std::cout << "Close Match %: " << ((perfectMatch + closeMatch) / nonRankPlayers->size()) * 100 << std::endl;
 }
 
+void train(std::vector<Player> *training, std::vector<Player> *test)
+{
+
+    std::srand(std::time(NULL));
+    NN nn(9, 1, 8, 8);
+    int run = 50;
+    double learn_rate = 0.01;
+    double score = 0;
+    double succes_rate = 0.0;
+    for (int j =0; j < 20000 / run; j++) {
+//        if (succes_rate > 0.28f)
+//            learn_rate = 0.1;
+//        if (succes_rate > 0.35f)
+//            learn_rate = 0.05;
+//        if (succes_rate > 0.40f)
+//            learn_rate = 0.01;
+//        if (succes_rate > 0.45f)
+//            learn_rate = 0.005;
+//        if (succes_rate > 0.50f)
+//            learn_rate = 0.001;
+
+        for (int i =0; i < run; i++)
+        {
+            for (auto& player : *training)
+            {
+
+                std::vector<double> input = player.toArray();
+
+
+                std::vector<double> output = {0, 0, 0, 0, 0 ,0 ,0 ,0};
+                int index = player.ActualLeagueIndex;
+                output[index - 1] = 1;
+
+                nn.train(&input, &output, learn_rate);
+
+            }
+        }
+
+        score = 0;
+        for (auto& player : *test)
+        {
+            std::vector<double> input = player.toArray();
+            std::vector<double> guess = nn.run(&input);
+
+            double val=0;
+            int index=0;
+            for (int i= 0; i<8; i++)
+            {
+                double tval = guess[i];
+
+                if (tval > val)
+                {
+                    index = i;
+                    val = tval;
+                }
+            }
+            player.LeagueIndex = index + 1;
+            score += static_cast<double>(player.LeagueIndex == player.ActualLeagueIndex);
+            //display result
+//            std::cout << " DESIRED OUTPUT: " << player.ActualLeagueIndex << " NET RESULT: "
+//                      << player.LeagueIndex << std::endl;
+        }
+        succes_rate = score / test->size();
+        std::cout << "NN run: " << j * run << " the score is " << score  << " (" << succes_rate << ")" << std::endl;
+    }
+
+    //nn_free(nn);
+}
+
+template<class Property>
+void normaliz_attribute(std::vector<Player> * players, Property  prop )
+{
+    auto bounds = std::minmax_element(players->begin(), players->end(),
+                                          [prop](Player p1, Player p2) {return *prop(&p1) <= *prop(&p2);});
+
+    for (auto& player : *players) {
+        if (*prop(&player) == 0) continue;
+        double min = *prop(&*bounds.first);
+        double max = *prop(&*bounds.second);
+        *prop(&player) = (*prop(&player) - min) / (max - min);
+    }
+}
+
+void normaliz(std::vector<Player> *players)
+{
+    normaliz_attribute(players,  [](Player* p) -> double* {return &(p->APM);});
+    normaliz_attribute(players,  [](Player* p) -> double* {return &(p->SelectByHotkeys);});
+    normaliz_attribute(players,  [](Player* p) -> double* {return &(p->AssignToHotkeys);});
+    normaliz_attribute(players,  [](Player* p) -> double* {return &(p->MinimapAttacks);});
+    normaliz_attribute(players,  [](Player* p) -> double* {return &(p->NumberOfPACs);});
+    normaliz_attribute(players,  [](Player* p) -> double* {return &(p->GapBetweenPACs);});
+    normaliz_attribute(players,  [](Player* p) -> double* {return &(p->ActionLatency);});
+    normaliz_attribute(players,  [](Player* p) -> double* {return &(p->TotalMapExplored);});
+    normaliz_attribute(players,  [](Player* p) -> double* {return &(p->WorkersMade);});
+}
+
 int main()
 {
 	std::cout << "Hello World!" << std::endl;
-	std::string path("data.csv");
-	//String path = chose_file()
-	//std::string file = read_file(path );
+    std::string path("data.csv");
 	std::vector<Player> players = read_csv(path);
 	int nb_fold = 5;
+
+    normaliz(&players);
 
 	for (int i = 0; i < nb_fold; ++i)
 	{
@@ -501,18 +479,13 @@ int main()
 		std::vector<Player> test;
 		split_data(&players, nb_fold, i, &training, &test);
 
-		//normalizePlayers(&players);
-		//calculScoresOfPlayers(&players);
-
-		//trim(&training);
 
 		NoiseRemoval(&training);
 
 		std::cout << std::endl << "KNN Algorithm Fold: " << i << std::endl;
 		KNNAlgorithm(&training, &test, 16);
-		//validate(&test);
 
-		//rate(&players);
+        train(&training, &test);
 
 		std::cout << std::endl;
 	}
