@@ -254,114 +254,225 @@ void split_data(std::vector<Player> *players, int nb_fold, int i,
 	}
 }
 
+
+
+struct orderAPM {
+	inline bool operator() (const Player& player1, const Player& player2) {
+		return (player1.APM < player2.APM);
+	}
+};
+
+/*
+ *
+struct orderSelectByHotkeys {
+	inline bool operator() (const Player& player1, const Player& player2) {
+		return (player1.SelectByHotkeys < player2.SelectByHotkeys);
+	}
+};
+
+struct orderAssignToHotkeys {
+	inline bool operator() (const Player& player1, const Player& player2) {
+		return (player1.AssignToHotkeys < player2.AssignToHotkeys);
+	}
+};
+
+struct orderUniqueHotkeys {
+	inline bool operator() (const Player& player1, const Player& player2) {
+		return (player1.UniqueHotkeys < player2.UniqueHotkeys);
+	}
+};
+
+struct orderNumberOfPACs {
+	inline bool operator() (const Player& player1, const Player& player2) {
+		return (player1.NumberOfPACs < player2.NumberOfPACs);
+	}
+};
+
+struct orderGapBetweenPACs {
+	inline bool operator() (const Player& player1, const Player& player2) {
+		return (player1.GapBetweenPACs < player2.GapBetweenPACs);
+	}
+};
+
+struct orderActionLatency {
+	inline bool operator() (const Player& player1, const Player& player2) {
+		return (player1.ActionLatency < player2.ActionLatency);
+	}
+};
+
+struct orderTotalMapExplored {
+	inline bool operator() (const Player& player1, const Player& player2) {
+		return (player1.TotalMapExplored < player2.TotalMapExplored);
+	}
+};
+
+struct orderWorkersMade {
+	inline bool operator() (const Player& player1, const Player& player2) {
+		return (player1.WorkersMade < player2.WorkersMade);
+	}
+};
+*/
+
+int MedianCalculator(std::vector<Player>* players)
+{
+	float median(0);
+
+	if ((players->size() % 2) == 0) {
+		//even
+		Player player1(players->at((players->size() / 2) - 1));
+		Player player2(players->at((players->size() / 2) + 1));
+		median = (player1.APM + player2.APM) / 2;
+	}
+	else {
+		// odd
+		Player player(players->at(players->size() / 2));
+		median = (player.APM);
+	}
+	return median;
+}
+
+/*
+void AverageCalculator(std::vector<Player>* players, float& totalAPMSub, float& totalSelectByHotkeysSub, float& totalAssignToHotkeysSub, float& totalMinimapAttacksSub, float& totalNumberOfPACsSub, float& totalGapBetweenPACsSub, float& totalActionLatencySub, float& totalTotalMapExploredSub, float& totalWorkersMadeSub)
+{
+float totalAPM(0.0);
+float totalSelectByHotkeys(0.0);
+float totalAssignToHotkeys(0.0);
+float totalMinimapAttacks(0.0);
+float totalNumberOfPACs(0.0);
+float totalGapBetweenPACs(0.0);
+float totalActionLatency(0.0);
+float totalTotalMapExplored(0.0);
+float totalWorkersMade(0.0);
+
+for (auto& player : *players) {
+totalAPM += player.APM;
+totalSelectByHotkeys += player.SelectByHotkeys;
+totalAssignToHotkeys += player.AssignToHotkeys;
+totalMinimapAttacks += player.MinimapAttacks;
+totalNumberOfPACs += player.NumberOfPACs;
+totalGapBetweenPACs += player.GapBetweenPACs;
+totalActionLatency += player.ActionLatency;
+totalTotalMapExplored += player.TotalMapExplored;
+totalWorkersMade += player.WorkersMade;
+}
+
+float averageAPM(totalAPM / players->size());
+float averageSelectByHotkeys(totalSelectByHotkeys / players->size());
+float averageAssignToHotkeys(totalAssignToHotkeys / players->size());
+float averageMinimapAttacks(totalMinimapAttacks / players->size());
+float averageNumberOfPACs(totalNumberOfPACs / players->size());
+float averageGapBetweenPACs(totalGapBetweenPACs / players->size());
+float averageActionLatency(totalActionLatency / players->size());
+float averageTotalMapExplored(totalTotalMapExplored / players->size());
+float averageWorkersMade(totalWorkersMade / players->size());
+
+std::cout << std::endl << "Average" << std::endl;
+
+std::cout << averageAPM << std::endl;
+std::cout << averageSelectByHotkeys << std::endl;
+std::cout << averageAssignToHotkeys << std::endl;
+std::cout << averageMinimapAttacks << std::endl;
+std::cout << averageNumberOfPACs << std::endl;
+std::cout << averageGapBetweenPACs << std::endl;
+std::cout << averageActionLatency << std::endl;
+std::cout << averageTotalMapExplored << std::endl;
+std::cout << averageWorkersMade << std::endl;
+
+totalAPMSub = 0.0;
+totalSelectByHotkeysSub = 0.0;
+totalAssignToHotkeysSub = 0.0;
+totalMinimapAttacksSub = 0.0;
+totalNumberOfPACsSub = 0.0;
+totalGapBetweenPACsSub = 0.0;
+totalActionLatencySub = 0.0;
+totalTotalMapExploredSub = 0.0;
+totalWorkersMadeSub = 0.0;
+
+for (auto& player : *players) {
+totalAPMSub += pow((player.APM - averageAPM), 2);
+totalSelectByHotkeysSub += pow(player.SelectByHotkeys - averageSelectByHotkeys, 2);
+totalAssignToHotkeysSub += pow(player.AssignToHotkeys - averageAssignToHotkeys, 2);
+totalMinimapAttacksSub += pow(player.MinimapAttacks - averageMinimapAttacks, 2);
+totalNumberOfPACsSub += pow(player.NumberOfPACs - averageNumberOfPACs, 2);
+totalGapBetweenPACsSub += pow(player.GapBetweenPACs - averageGapBetweenPACs, 2);
+totalActionLatencySub += pow(player.ActionLatency - averageActionLatency, 2);
+totalTotalMapExploredSub += pow(player.TotalMapExplored - averageTotalMapExplored, 2);
+totalWorkersMadeSub += pow(player.WorkersMade - averageWorkersMade, 2);
+}
+}
+
+
+void StandardDeviation(std::vector<Player>* players, float totalAPMSub, float totalSelectByHotkeysSub, float totalAssignToHotkeysSub, float totalMinimapAttacksSub, float totalNumberOfPACsSub, float totalGapBetweenPACsSub, float totalActionLatencySub, float totalTotalMapExploredSub, float totalWorkersMadeSub)
+{
+std::cout << std::endl << "SUM of value minus average powered by 2" << std::endl;
+std::cout << totalAPMSub << std::endl;
+std::cout << totalSelectByHotkeysSub << std::endl;
+std::cout << totalAssignToHotkeysSub << std::endl;
+std::cout << totalMinimapAttacksSub << std::endl;
+std::cout << totalNumberOfPACsSub << std::endl;
+std::cout << totalGapBetweenPACsSub << std::endl;
+std::cout << totalActionLatencySub << std::endl;
+std::cout << totalTotalMapExploredSub << std::endl;
+std::cout << totalWorkersMadeSub << std::endl;
+
+int size = players->size();
+std::cout << std::endl << "Size" << std::endl;
+std::cout << size << std::endl;
+
+float StandardDevAPM(sqrt((1.0 / size)*totalAPMSub));
+float StandardDevSelectByHotkeys(sqrt((1.0 / size)*totalSelectByHotkeysSub));
+float StandardDevAssignToHotkeys(sqrt((1.0 / size)*totalAssignToHotkeysSub));
+float StandardDevMinimapAttacks(sqrt((1.0 / size)*totalMinimapAttacksSub));
+float StandardDevNumberOfPACs(sqrt((1.0 / size)*totalNumberOfPACsSub));
+float StandardDevGapBetweenPACs(sqrt((1.0 / size)*totalGapBetweenPACsSub));
+float StandardDevActionLatency(sqrt((1.0 / size)*totalActionLatencySub));
+float StandardDevTotalMapExplored(sqrt((1.0 / size)*totalTotalMapExploredSub));
+float StandardDevWorkersMade(sqrt((1.0 / size)*totalWorkersMadeSub));
+
+std::cout << std::endl << "Standard Deviation" << std::endl;
+
+std::cout << StandardDevAPM << std::endl;
+std::cout << StandardDevSelectByHotkeys << std::endl;
+std::cout << StandardDevAssignToHotkeys << std::endl;
+std::cout << StandardDevMinimapAttacks << std::endl;
+std::cout << StandardDevNumberOfPACs << std::endl;
+std::cout << StandardDevGapBetweenPACs << std::endl;
+std::cout << StandardDevActionLatency << std::endl;
+std::cout << StandardDevTotalMapExplored << std::endl;
+std::cout << StandardDevWorkersMade << std::endl;
+}
+*/
+
 void NoiseRemoval(std::vector<Player> *players)
 {
+	/*
+	float totalAPMSub;
+	float totalSelectByHotkeysSub;
+	float totalAssignToHotkeysSub;
+	float totalMinimapAttacksSub;
+	float totalNumberOfPACsSub;
+	float totalGapBetweenPACsSub;
+	float totalActionLatencySub;
+	float totalTotalMapExploredSub;
+	float totalWorkersMadeSub;
 
-	float totalAPM(0.0);
-	float totalSelectByHotkeys(0.0);
-	float totalAssignToHotkeys(0.0);
-	float totalMinimapAttacks(0.0);
-	float totalNumberOfPACs(0.0);
-	float totalGapBetweenPACs(0.0);
-	float totalActionLatency(0.0);
-	float totalTotalMapExplored(0.0);
-	float totalWorkersMade(0.0);
+	AverageCalculator(players, totalAPMSub, totalSelectByHotkeysSub, totalAssignToHotkeysSub, totalMinimapAttacksSub, totalNumberOfPACsSub, totalGapBetweenPACsSub, totalActionLatencySub, totalTotalMapExploredSub, totalWorkersMadeSub);
+	StandardDeviation(players, totalAPMSub, totalSelectByHotkeysSub, totalAssignToHotkeysSub, totalMinimapAttacksSub, totalNumberOfPACsSub, totalGapBetweenPACsSub, totalActionLatencySub, totalTotalMapExploredSub, totalWorkersMadeSub);
+	*/
 
-	for (auto& player : *players) {
-		totalAPM += player.APM;
-		totalSelectByHotkeys += player.SelectByHotkeys;
-		totalAssignToHotkeys += player.AssignToHotkeys;
-		totalMinimapAttacks += player.MinimapAttacks;
-		totalNumberOfPACs += player.NumberOfPACs;
-		totalGapBetweenPACs += player.GapBetweenPACs;
-		totalActionLatency += player.ActionLatency;
-		totalTotalMapExplored += player.TotalMapExplored;
-		totalWorkersMade += player.WorkersMade;
-	}
+	std::sort(players->begin(), players->end(), orderAPM());
 
+	int quartileSize(players->size() / 8);
 
-	float averageAPM(totalAPM / players->size());
-	float averageSelectByHotkeys(totalSelectByHotkeys / players->size());
-	float averageAssignToHotkeys(totalAssignToHotkeys / players->size());
-	float averageMinimapAttacks(totalMinimapAttacks / players->size());
-	float averageNumberOfPACs(totalNumberOfPACs / players->size());
-	float averageGapBetweenPACs(totalGapBetweenPACs / players->size());
-	float averageActionLatency(totalActionLatency / players->size());
-	float averageTotalMapExplored(totalTotalMapExplored / players->size());
-	float averageWorkersMade(totalWorkersMade / players->size());
+	std::vector<Player>::const_iterator first = players->begin();
+	std::vector<Player>::const_iterator last = players->begin() + quartileSize;
+	std::vector<Player> firstQ(first, last);
+	int APMFirstQMedian(MedianCalculator(&firstQ));
 
-	std::cout << std::endl << "Average" << std::endl;
-
-	std::cout << averageAPM << std::endl;
-	std::cout << averageSelectByHotkeys << std::endl;
-	std::cout << averageAssignToHotkeys << std::endl;
-	std::cout << averageMinimapAttacks << std::endl;
-	std::cout << averageNumberOfPACs << std::endl;
-	std::cout << averageGapBetweenPACs << std::endl;
-	std::cout << averageActionLatency << std::endl;
-	std::cout << averageTotalMapExplored << std::endl;
-	std::cout << averageWorkersMade << std::endl;
-
-	float totalAPMSub(0.0);
-	float totalSelectByHotkeysSub(0.0);
-	float totalAssignToHotkeysSub(0.0);
-	float totalMinimapAttacksSub(0.0);
-	float totalNumberOfPACsSub(0.0);
-	float totalGapBetweenPACsSub(0.0);
-	float totalActionLatencySub(0.0);
-	float totalTotalMapExploredSub(0.0);
-	float totalWorkersMadeSub(0.0);
-
-	for (auto& player : *players) {
-		totalAPMSub += pow((player.APM - averageAPM), 2);
-		totalSelectByHotkeysSub += pow(player.SelectByHotkeys - averageSelectByHotkeys, 2);
-		totalAssignToHotkeysSub += pow(player.AssignToHotkeys - averageAssignToHotkeys, 2);
-		totalMinimapAttacksSub += pow(player.MinimapAttacks - averageMinimapAttacks, 2);
-		totalNumberOfPACsSub += pow(player.NumberOfPACs - averageNumberOfPACs, 2);
-		totalGapBetweenPACsSub += pow(player.GapBetweenPACs - averageGapBetweenPACs, 2);
-		totalActionLatencySub += pow(player.ActionLatency - averageActionLatency, 2);
-		totalTotalMapExploredSub += pow(player.TotalMapExplored - averageTotalMapExplored, 2);
-		totalWorkersMadeSub += pow(player.WorkersMade - averageWorkersMade, 2);
-	}
-
-
-	std::cout << std::endl << "SUM of value minus average powered by 2" << std::endl;
-	std::cout << totalAPMSub << std::endl;
-	std::cout << totalSelectByHotkeysSub << std::endl;
-	std::cout << totalAssignToHotkeysSub << std::endl;
-	std::cout << totalMinimapAttacksSub << std::endl;
-	std::cout << totalNumberOfPACsSub << std::endl;
-	std::cout << totalGapBetweenPACsSub << std::endl;
-	std::cout << totalActionLatencySub << std::endl;
-	std::cout << totalTotalMapExploredSub << std::endl;
-	std::cout << totalWorkersMadeSub << std::endl;
-
-
-	float size(players->size());
-	std::cout << std::endl << "Size" << std::endl;
-	std::cout << size << std::endl;
-
-	float StandardDevAPM(sqrt((1.0 / size)*totalAPMSub));
-	float StandardDevSelectByHotkeys(sqrt((1.0 / size)*totalSelectByHotkeysSub));
-	float StandardDevAssignToHotkeys(sqrt((1.0 / size)*totalAssignToHotkeysSub));
-	float StandardDevMinimapAttacks(sqrt((1.0 / size)*totalMinimapAttacksSub));
-	float StandardDevNumberOfPACs(sqrt((1.0 / size)*totalNumberOfPACsSub));
-	float StandardDevGapBetweenPACs(sqrt((1.0 / size)*totalGapBetweenPACsSub));
-	float StandardDevActionLatency(sqrt((1.0 / size)*totalActionLatencySub));
-	float StandardDevTotalMapExplored(sqrt((1.0 / size)*totalTotalMapExploredSub));
-	float StandardDevWorkersMade(sqrt((1.0 / size)*totalWorkersMadeSub));
-
-	std::cout << std::endl << "Standard Deviation" << std::endl;
-
-	std::cout << StandardDevAPM << std::endl;
-	std::cout << StandardDevSelectByHotkeys << std::endl;
-	std::cout << StandardDevAssignToHotkeys << std::endl;
-	std::cout << StandardDevMinimapAttacks << std::endl;
-	std::cout << StandardDevNumberOfPACs << std::endl;
-	std::cout << StandardDevGapBetweenPACs << std::endl;
-	std::cout << StandardDevActionLatency << std::endl;
-	std::cout << StandardDevTotalMapExplored << std::endl;
-	std::cout << StandardDevWorkersMade << std::endl;
+	std::vector<Player>::const_iterator first2 = players->begin() + (players->size() - quartileSize);
+	std::vector<Player>::const_iterator last2 = players->begin() + players->size();
+	std::vector<Player> lastQ(first2, last2);
+	int APMLastQMedian(MedianCalculator(&lastQ));
 }
 
 
@@ -632,8 +743,8 @@ int main()
 
 	int nb_fold = 5;
 
-	normaliz(&players);	// Commented because cant compile on my computer somehow !
-	normaliz(&evalPlayers);
+	//normaliz(&players);	// Commented because cant compile on my computer somehow !
+	//normaliz(&evalPlayers);
 
 	std::srand(std::time(nullptr));
 	NN nn(9, 1, 8, 8);
@@ -650,8 +761,8 @@ int main()
 		std::vector<Player> test;
 		split_data(&players, nb_fold, i, &training, &test);
 
-
-		NoiseRemoval(&training);
+		//http://www.wikihow.com/Calculate-Outliers
+		// NoiseRemoval(&training);
 
 		std::cout << std::endl << "KNN Algorithm Fold: " << i << std::endl;
 
