@@ -32,65 +32,46 @@
 #include "neuron.h"
 #include "layer.h"
 
-
-
 class NN {
 
 private :
-    /* How many inputs, outputs, and hidden neurons. */
-    //int inputs, hidden_layers, hidden, outputs;
 
-    /* Which activation function to use for hidden neurons. Default: gennann_act_sigmoid_cached*/
-    //nn_actfun activation_hidden;
+	/* Total number of weights, and size of weights buffer. */
+	int total_weights{};
 
-    /* Which activation function to use for output. Default: gennann_act_sigmoid_cached*/
-    //nn_actfun activation_output;
+	/* Total number of neurons + inputs and size of output buffer. */
+	int total_neurons{};
 
-    /* Total number of weights, and size of weights buffer. */
-    int total_weights{};
+	Layer input_layer;
+	std::vector<Layer> hidden_layers;
+	Layer output_layer;
 
-    /* Total number of neurons + inputs and size of output buffer. */
-    int total_neurons{};
+	std::vector<Layer*> layers;
 
-    Layer input_layer;
-    std::vector<Layer> hidden_layers;
-    Layer output_layer;
+public :
+	// Constructor
+	NN(int inputs, int nb_hidden_layers, int hidden, int outputs);
 
-    std::vector<Layer*> layers;
-    /* All weights (total_weights long). */
-    //double *weight;
-    
+	/* Sets weights randomly. Called by init. */
+	void randomize();
 
-    /* Stores input array and output of each neuron (total_neurons long). */
-    //double *output;
+	/* Runs the feedforward algorithm to calculate the ann's output. */
+	std::vector<double> run(const std::vector<double> * inputs);
 
-    /* Stores delta of each hidden and output neuron (total_neurons - inputs long). */
-    //double *delta;
+	/* Does a single backprop update. */
+	void train(const std::vector<double> *inputs, const std::vector<double> *desired_outputs, double learning_rate);
+	void back_propagation(Layer *layer, Layer *previous_layer, const std::vector<double>* desired_outputs, double learning_rate);
 
-   public :
-    // Constructor
-    NN(int inputs, int nb_hidden_layers, int hidden, int outputs);
+	/* Saves the ann. */
+	void write(FILE *out);
 
-    /* Sets weights randomly. Called by init. */
-    void randomize();
+	/* Creates ANN from file saved with nn_write. */
+	NN *read(FILE *in);
 
-    /* Runs the feedforward algorithm to calculate the ann's output. */
-    std::vector<double> run(const std::vector<double> * inputs);
-
-    /* Does a single backprop update. */
-    void train(const std::vector<double> *inputs, const std::vector<double> *desired_outputs, double learning_rate);
-    void back_propagation(Layer *layer, Layer *previous_layer, const std::vector<double>* desired_outputs, double learning_rate);
-
-    /* Saves the ann. */
-    void write(FILE *out);
-
-    /* Creates ANN from file saved with nn_write. */
-    NN *read(FILE *in);
-
-    double nn_act_sigmoid(double a);
-    double nn_act_sigmoid_cached(double a);
-    double nn_act_threshold(double a);
-    double nn_act_linear(double a);
+	double nn_act_sigmoid(double a);
+	double nn_act_sigmoid_cached(double a);
+	double nn_act_threshold(double a);
+	double nn_act_linear(double a);
 
 };
 
