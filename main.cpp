@@ -19,6 +19,7 @@
 #include "layer.h"
 #include "neuron.h"
 
+
 class Player
 {
 public:
@@ -110,6 +111,14 @@ std::string remove_char(std::string str, char ch)
 	return str;
 }
 
+bool replace(std::string& str, const std::string& from, const std::string& to) {
+		size_t start_pos = str.find(from);
+		if(start_pos == std::string::npos)
+				return false;
+		str.replace(start_pos, from.length(), to);
+		return true;
+}
+
 std::vector<Player> read_csv(const std::string& path)
 {
 	std::vector<Player> players;
@@ -174,10 +183,12 @@ std::vector<Player> read_csv_evaluation(const std::string& path)
 		getline(myfile, line);
 		while (getline(myfile, line))
 		{
-			std::size_t found = line.find("NULL");
-			if (found != std::string::npos) {
-				continue;
-			}
+			while(replace(line, "NULL", "0"));
+
+//			std::size_t found = line.find("NULL");
+//			if (found != std::string::npos) {
+//				continue;
+//			}
 
 			line = remove_char(line, '"');
 			std::vector<std::string> data = split(line, ',');
@@ -186,8 +197,8 @@ std::vector<Player> read_csv_evaluation(const std::string& path)
 			player.Age = std::stoi(data[1]);
 			player.HoursPerWeek = std::stoi(data[1]);
 			player.TotalHours = std::stoi(data[2]);
-			player.APM = std::stoi(data[3]);
-			player.SelectByHotkeys = std::stoi(data[4]);
+			player.APM = std::stof(data[3]);
+			player.SelectByHotkeys = std::stof(data[4]);
 			player.AssignToHotkeys = std::stof(data[5]);
 			player.UniqueHotkeys = std::stof(data[6]);
 			player.MinimapAttacks = std::stof(data[7]);
@@ -216,7 +227,7 @@ std::vector<Player> read_csv_evaluation(const std::string& path)
 }
 
 void split_data(std::vector<Player> *players, int nb_fold, int i,
-	std::vector<Player> *training, std::vector<Player> *test)
+								std::vector<Player> *training, std::vector<Player> *test)
 {
 	int nb_element = players->size() / nb_fold;
 
@@ -366,16 +377,16 @@ void KNNAlgorithm(std::vector<Player> *rankedPlayers, std::vector<Player> *nonRa
 		// Calculated distance between players
 		for (auto& rankedPlayer : *rankedPlayers) {
 			float distance = sqrt(
-				pow((nonRankPlayer.APM - rankedPlayer.APM), 2) +
-				pow((nonRankPlayer.SelectByHotkeys - rankedPlayer.SelectByHotkeys), 2) +
-				pow((nonRankPlayer.AssignToHotkeys - rankedPlayer.AssignToHotkeys), 2) +
-				pow((nonRankPlayer.MinimapAttacks - rankedPlayer.MinimapAttacks), 2) +
-				pow((nonRankPlayer.NumberOfPACs - rankedPlayer.NumberOfPACs), 2) +
-				pow((nonRankPlayer.GapBetweenPACs - rankedPlayer.GapBetweenPACs), 2) +
-				pow((nonRankPlayer.ActionLatency - rankedPlayer.ActionLatency), 2) +
-				pow((nonRankPlayer.TotalMapExplored - rankedPlayer.TotalMapExplored), 2) +
-				pow((nonRankPlayer.WorkersMade - rankedPlayer.WorkersMade), 2)
-				);
+						pow((nonRankPlayer.APM - rankedPlayer.APM), 2) +
+						pow((nonRankPlayer.SelectByHotkeys - rankedPlayer.SelectByHotkeys), 2) +
+						pow((nonRankPlayer.AssignToHotkeys - rankedPlayer.AssignToHotkeys), 2) +
+						pow((nonRankPlayer.MinimapAttacks - rankedPlayer.MinimapAttacks), 2) +
+						pow((nonRankPlayer.NumberOfPACs - rankedPlayer.NumberOfPACs), 2) +
+						pow((nonRankPlayer.GapBetweenPACs - rankedPlayer.GapBetweenPACs), 2) +
+						pow((nonRankPlayer.ActionLatency - rankedPlayer.ActionLatency), 2) +
+						pow((nonRankPlayer.TotalMapExplored - rankedPlayer.TotalMapExplored), 2) +
+						pow((nonRankPlayer.WorkersMade - rankedPlayer.WorkersMade), 2)
+						);
 			PairDistance pairDistance{};
 			pairDistance.Distance = distance;
 			pairDistance.RankGamerId = rankedPlayer.GameID;
@@ -429,11 +440,8 @@ void KNNAlgorithm(std::vector<Player> *rankedPlayers, std::vector<Player> *nonRa
 	std::cout << "Close Match %: " << ((perfectMatch + closeMatch) / nonRankPlayers->size()) * 100 << std::endl;
 }
 
-void train(std::vector<Player> *training, std::vector<Player> *test)
+void train(NN *nn, std::vector<Player> *training, std::vector<Player> *test)
 {
-
-	std::srand(std::time(nullptr));
-	NN nn(9, 1, 8, 8);
 	int run = 500;
 	double learn_rate = 0.2;
 	double score = 0;
@@ -456,7 +464,7 @@ void train(std::vector<Player> *training, std::vector<Player> *test)
 				int index = player.ActualLeagueIndex;
 				output[index - 1] = 1;
 
-				nn.train(&input, &output, learn_rate);
+				nn->train(&input, &output, learn_rate);
 
 			}
 		}
@@ -465,7 +473,7 @@ void train(std::vector<Player> *training, std::vector<Player> *test)
 		for (auto& player : *test)
 		{
 			std::vector<double> input = player.toArray();
-			std::vector<double> guess = nn.run(&input);
+			std::vector<double> guess = nn->run(&input);
 
 			for (int i = 0; i<8; i++) {
 				player.Guess[i] += guess[i];
@@ -505,14 +513,28 @@ void train(std::vector<Player> *training, std::vector<Player> *test)
 		std::cout << "Close Match %: " << ((perfectMatch + closeMatch) / test->size()) * 100 << std::endl;
 	}
 
-	//nn_free(nn);
+}
+
+void nn_evaluation(NN *nn, std::vector<Player> *test)
+{
+	for (auto& player : *test)
+	{
+		std::vector<double> input = player.toArray();
+		std::vector<double> guess = nn->run(&input);
+
+		for (int i = 0; i<8; i++) {
+			player.Guess[i] += guess[i];
+			player.Guess[i] /= 2;
+		}
+
+	}
 }
 
 template<class Property>
 void normaliz_attribute(std::vector<Player> * players, Property  prop)
 {
 	auto bounds = std::minmax_element(players->begin(), players->end(),
-		[prop](Player p1, Player p2) {return *prop(&p1) <= *prop(&p2); });
+																		[prop](Player p1, Player p2) {return *prop(&p1) <= *prop(&p2); });
 
 	double min = *prop(&*bounds.first);
 	double max = *prop(&*bounds.second);
@@ -536,7 +558,7 @@ void normaliz(std::vector<Player> *players)
 	normaliz_attribute(players, [](Player* p) -> double* {return &(p->WorkersMade); });
 }
 
-void evaluate(std::vector<Player> *players)
+double evaluate(std::vector<Player> *players)
 {
 	double perfectMatch(0);
 	double closeMatch(0);
@@ -572,6 +594,31 @@ void evaluate(std::vector<Player> *players)
 
 	std::cout << "Perfect Match %: " << (perfectMatch / players->size()) * 100 << std::endl;
 	std::cout << "Close Match %: " << ((perfectMatch + closeMatch) / players->size()) * 100 << std::endl;
+
+	return (perfectMatch / players->size());
+}
+
+void output(std::vector<Player> *players)
+{
+	std::cout << std::endl << "Output : " << std::endl;
+
+	for (auto&& player : *players) {
+		double league(0);
+		int league_index(0);
+
+		int i(1);
+		for (auto l : player.Guess) {
+			if (l > league) {
+				league = l;
+				league_index = i;
+			}
+			++i;
+		}
+
+		std::cout << "Id : " << player.GameID << " League : "<< league_index << std::endl;
+	}
+
+
 }
 
 int main()
@@ -585,18 +632,20 @@ int main()
 
 	int nb_fold = 5;
 
-	//normaliz(&players);	// Commented because cant compile on my computer somehow !
+	normaliz(&players);	// Commented because cant compile on my computer somehow !
+	normaliz(&evalPlayers);
 
-	int i = 0;
+	std::srand(std::time(nullptr));
+	NN nn(9, 1, 8, 8);
 
-	/* Display players of Evaluation.csv
-	
-	for (auto& player : evalPlayers) {
-		std::cout << std::endl << "unranked player APM : " << player.APM << std::endl;
-	}*/
+	double score(0);
 
-	//for (int i = 0; i < nb_fold; ++i)
+	//Train
+	for (int i = 0; i < nb_fold; ++i)
 	{
+		NN nn2(9, 1, 8, 8);
+
+
 		std::vector<Player> training;
 		std::vector<Player> test;
 		split_data(&players, nb_fold, i, &training, &test);
@@ -608,12 +657,23 @@ int main()
 
 		KNNAlgorithm(&training, &test, 8);
 
-		train(&training, &test);
+		train(&nn2, &training, &test);
 
-		evaluate(&test);
+		double score2 = evaluate(&test);
+		if (score2 > score){
+			score = score2;
+			nn = nn2;
+		}
 
 		std::cout << std::endl;
 	}
+
+	//evaluation
+	KNNAlgorithm(&players, &evalPlayers, 8);
+	nn_evaluation(&nn, &evalPlayers);
+
+	output(&evalPlayers);
+
 
 	return 0;
 }
