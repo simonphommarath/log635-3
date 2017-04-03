@@ -1,0 +1,12 @@
+[
+{
+  "directory": "/home/nicolas/devel/build-log635-3-Desktop-Debug",
+  "command": "/usr/bin/clang++     -g   -std=gnu++14 -o CMakeFiles/ai.dir/main.cpp.o -c /home/nicolas/devel/log635-3/main.cpp",
+  "file": "/home/nicolas/devel/log635-3/main.cpp"
+},
+{
+  "directory": "/home/nicolas/devel/build-log635-3-Desktop-Debug",
+  "command": "/usr/bin/clang++     -g   -std=gnu++14 -o CMakeFiles/ai.dir/nn.cpp.o -c /home/nicolas/devel/log635-3/nn.cpp",
+  "file": "/home/nicolas/devel/log635-3/nn.cpp"
+}
+]
