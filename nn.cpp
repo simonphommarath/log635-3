@@ -7,48 +7,14 @@
 #include "layer.h"
 #include "neuron.h"
 
-#define LOOKUP_SIZE 4096
-
-double NN::nn_act_sigmoid(double a) {
-	if (a < -45.0) { return 0;
+double NN::sigmoid(double a) {
+	if (a < -45.0) {
+		return 0;
 	}
-	if (a > 45.0) { return 1;
+	if (a > 45.0) {
+		return 1;
 	}
 	return 1.0 / (1 + exp(-a));
-}
-
-
-double NN::nn_act_sigmoid_cached(double a) {
-	/* If you're optimizing for memory usage, just
-		 * delete this entire function and replace references
-		 * of nn_act_sigmoid_cached to nn_act_sigmoid
-		 */
-	const double min = -15.0;
-	const double max = 15.0;
-	static double interval;
-	static int initialized = 0;
-	static double lookup[LOOKUP_SIZE];
-
-	/* Calculate entire lookup table on first run. */
-	if (initialized == 0) {
-		interval = (max - min) / LOOKUP_SIZE;
-		int i;
-		for (i = 0; i < LOOKUP_SIZE; ++i) {
-			lookup[i] = nn_act_sigmoid(min + interval * i);
-		}
-		/* This is down here to make this thread safe. */
-		initialized = 1;
-	}
-
-	int i;
-	i = static_cast<int>((a-min)/interval+0.5);
-	if (i <= 0) {
-		return lookup[0];
-	}
-	if (i >= LOOKUP_SIZE) {
-		return lookup[LOOKUP_SIZE-1];
-	}
-	return lookup[i];
 }
 
 
@@ -75,7 +41,7 @@ NN::NN(int inputs, int nb_hidden_layers, int hidden, int outputs)
 
 	randomize();
 
-	nn_act_sigmoid_cached(0);
+	sigmoid(0);
 }
 
 
@@ -113,7 +79,7 @@ std::vector<double> NN::run(const std::vector<double> *inputs) {
 			for(auto& previous_neuron : previous_layer->neurons){
 				sum += previous_neuron.weights[j] * previous_neuron.output;
 			}
-			layer->neurons[j].output = nn_act_sigmoid_cached(sum);
+			layer->neurons[j].output = sigmoid(sum);
 			//output.push_back(neuron.output);
 		}
 	}
@@ -133,7 +99,7 @@ std::vector<double> NN::run(const std::vector<double> *inputs) {
 		for (auto& previous_neuron : previous_layer->neurons){
 			sum += previous_neuron.weights[i] * previous_neuron.output;
 		}
-		output_layer.neurons[i].output = nn_act_sigmoid_cached(sum);
+		output_layer.neurons[i].output = sigmoid(sum);
 		output.push_back(output_layer.neurons[i].output);
 	}
 
@@ -217,7 +183,5 @@ void NN::train(const std::vector<double> *inputs, const std::vector<double>* des
 
 		back_propagation(layer, previous_layer, desired_outputs, learning_rate);
 	}
-
-
 
 }

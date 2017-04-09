@@ -67,7 +67,7 @@ public:
 class PairDistance
 {
 public:
-	float Distance;
+	double Distance;
 	int RankGamerId;
 	int NonRankGamerId;
 	int RankGamerLeagueIndex;
@@ -262,47 +262,67 @@ struct orderAPM {
 	}
 };
 
-
-int MedianCalculator(std::vector<Player>* players)
+double MedianCalculator(std::vector<Player>* players)
 {
-	float median(0);
+	double median(0);
 
 	if ((players->size() % 2) == 0) {
 		//even
 		Player player1(players->at((players->size() / 2) - 1));
 		Player player2(players->at((players->size() / 2) + 1));
-		median = (player1.APM + player2.APM) / 2;
+		median = (player1.APM + player2.APM) / 2.0;
 	}
 	else {
 		// odd
-		Player player(players->at(players->size() / 2));
+		Player player(players->at(players->size() / 2.0));
 		median = (player.APM);
 	}
 	return median;
 }
 
 
-
-void NoiseRemoval(std::vector<Player> *players)
+class Boundary
 {
+public:
+	double LowerBound;
+	double UpperBound;
+};
 
+
+Boundary NoiseRemoval(std::vector<Player> *players)
+{
 	std::sort(players->begin(), players->end(), orderAPM());
 
-	int quartileSize(players->size() / 8);
+	int quartileSize(players->size() / 4);
+
 
 	std::vector<Player>::const_iterator first = players->begin();
 	std::vector<Player>::const_iterator last = players->begin() + quartileSize;
 	std::vector<Player> firstQ(first, last);
-	int APMFirstQMedian(MedianCalculator(&firstQ));
+	double APMFirstQMedian(MedianCalculator(&firstQ));
 
 	std::vector<Player>::const_iterator first2 = players->begin() + (players->size() - quartileSize);
 	std::vector<Player>::const_iterator last2 = players->begin() + players->size();
 	std::vector<Player> lastQ(first2, last2);
-	int APMLastQMedian(MedianCalculator(&lastQ));
+	double APMLastQMedian(MedianCalculator(&lastQ));
+
+	std::cout <<  APMFirstQMedian << std::endl;
+	std::cout <<  APMLastQMedian << std::endl;
+	std::cout <<  APMLastQMedian - APMFirstQMedian << std::endl;
+	std::cout << (APMLastQMedian - APMFirstQMedian) * 1.5 << std::endl;
+
+	std::cout << firstQ.at(firstQ.size()-1).APM - (APMLastQMedian - APMFirstQMedian) * 1.5 << std::endl;
+	std::cout << lastQ.at(0).APM + (APMLastQMedian - APMFirstQMedian) * 1.5 << std::endl;
+
+	Boundary boundary;
+	boundary.LowerBound = firstQ.at(firstQ.size() - 1).APM - (APMLastQMedian - APMFirstQMedian) * 1.5;
+	boundary.UpperBound = lastQ.at(0).APM + (APMLastQMedian - APMFirstQMedian) * 1.5;
+
+	return boundary;
 }
 
 
-void KNNAlgorithm(std::vector<Player> *rankedPlayers, std::vector<Player> *nonRankPlayers, int k)
+void KNNAlgorithm(std::vector<Player> *rankedPlayers, std::vector<Player> *nonRankPlayers, int k, Boundary boundary)
 {
 	double perfectMatch(0);
 	double closeMatch(0);
@@ -313,7 +333,12 @@ void KNNAlgorithm(std::vector<Player> *rankedPlayers, std::vector<Player> *nonRa
 
 		// Calculated distance between players
 		for (auto& rankedPlayer : *rankedPlayers) {
-			float distance = sqrt(
+
+			if (rankedPlayer.APM < boundary.LowerBound || rankedPlayer.APM > boundary.UpperBound)
+				continue;
+
+			// Number of attributs doesn't really affect the result
+			double distance = sqrt(
 						pow((nonRankPlayer.APM - rankedPlayer.APM), 2) +
 						pow((nonRankPlayer.SelectByHotkeys - rankedPlayer.SelectByHotkeys), 2) +
 						pow((nonRankPlayer.AssignToHotkeys - rankedPlayer.AssignToHotkeys), 2) +
@@ -537,8 +562,6 @@ double evaluate(std::vector<Player> *players)
 
 void output(std::vector<Player> *players)
 {
-	std::cout << std::endl << "Output : " << std::endl;
-
 	for (auto&& player : *players) {
 		double league(0);
 		int league_index(0);
@@ -561,23 +584,28 @@ void output(std::vector<Player> *players)
 int main()
 {
 	std::cout << "Hello World!" << std::endl;
-	std::string path("data.csv");
-	std::string evalPath("Evaluations.csv");	//Added recently Yan
+	//std::string path("data.csv");
+	std::string path("Correction-Dataset.csv");
+	std::string evalPath("Correction-Evaluations.csv");	//Added recently Yan
 
 	std::vector<Player> players = read_csv(path);
 	std::vector<Player> evalPlayers = read_csv_evaluation(evalPath);	//Added recently Yan
 
 	int nb_fold = 5;
 
-	//normaliz(&players);
-	//normaliz(&evalPlayers);
+	normaliz(&players);
+	normaliz(&evalPlayers);
 
 	std::srand(std::time(nullptr));
 	NN nn(9, 1, 8, 8);
 
 	double score(0);
 
+
+	Boundary boundary(NoiseRemoval(&players));
+
 	//Train
+	int i = 0;
 	for (int i = 0; i < nb_fold; ++i)
 	{
 		NN nn2(9, 1, 8, 8);
@@ -585,14 +613,12 @@ int main()
 
 		std::vector<Player> training;
 		std::vector<Player> test;
+
 		split_data(&players, nb_fold, i, &training, &test);
 
-		//http://www.wikihow.com/Calculate-Outliers
-		// NoiseRemoval(&training);
+		std::cout << std::endl << "Fold: " << i + 1 << std::endl;
 
-		std::cout << std::endl << "KNN Algorithm Fold: " << i << std::endl;
-
-		KNNAlgorithm(&training, &test, 8);
+		KNNAlgorithm(&training, &test, 8, boundary);
 
 		train(&nn2, &training, &test);
 
@@ -606,9 +632,13 @@ int main()
 	}
 
 	//evaluation
-	KNNAlgorithm(&players, &evalPlayers, 8);
+	KNNAlgorithm(&players, &evalPlayers, 8, boundary);
+
 	nn_evaluation(&nn, &evalPlayers);
 
+
+	std::cout << std::endl << "Output : " << std::endl;
+	std::cout << std::endl << "Pourcentage confiance : " << score * 100 << "%" << std::endl;
 	output(&evalPlayers);
 
 
